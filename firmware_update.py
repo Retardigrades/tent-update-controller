@@ -11,17 +11,17 @@ from datetime import datetime
 from flask import Flask, send_file, request, abort, make_response
 
 
-def strings(filename, min=4):
+def strings(filename, min_len=4):
     with open(filename, errors="ignore") as f:  # Python 3.x
         result = ""
         for c in f.read():
             if c in string.printable:
                 result += c
                 continue
-            if len(result) >= min:
+            if len(result) >= min_len:
                 yield result
             result = ""
-        if len(result) >= min:  # catch result at EOF
+        if len(result) >= min_len:  # catch result at EOF
             yield result
 
 
@@ -56,30 +56,30 @@ class Config(object):
         self.check = check_before_compare
         self.fwlock = threading.RLock()
 
-    def add(self, name, firmware):
+    def add(self, firmware_name, firmware):
         print("INFO: add firmware: {}".format(firmware))
-        self.firmwares[name] = firmware
+        self.firmwares[firmware_name] = firmware
 
-    def set_dirty(self, name):
+    def set_dirty(self, firmware_name):
         with self.fwlock:
-            self.is_dirty.add(name)
+            self.is_dirty.add(firmware_name)
 
-    def get_firmware(self, type, date):
+    def get_firmware(self, firmare_name, date):
         with self.fwlock:
-            firmware = self.firmwares.get(type)
-            if type in self.is_dirty:
+            firmware = self.firmwares.get(firmare_name)
+            if firmare_name in self.is_dirty:
                 print("INFO: File {} dirty - recompute .. ".format(name))
-                self.is_dirty.remove(type)
+                self.is_dirty.remove(firmare_name)
                 firmware = prepare_fw(firmware.filename, self.stat)
                 print("INFO: new fw: {}".format(firmware))
-                self.firmwares[type] = firmware
+                self.firmwares[firmare_name] = firmware
 
             if firmware:
                 if self.check and firmware.changed:
                     print("INFO: firmware {} changed ..".format(name))
                     firmware = prepare_fw(firmware.filename, self.stat)
                     print("INFO: new fw: {}".format(firmware))
-                    self.firmwares[type] = firmware
+                    self.firmwares[firmare_name] = firmware
 
                 if firmware.version > date:
                     return firmware
@@ -105,21 +105,20 @@ def prepare_fw(filename, stat):
 
     file_time = datetime.fromtimestamp(os.path.getmtime(filename))
 
-    timestamp = None
     if not stat:
         for item in strings(filename, 8):
             if item.startswith("TENT_VERSION::"):
-                timestamp = parse_fw(item.strip())
-                if timestamp:
-                    return Firmware(timestamp, filename, file_time)
+                version_timestamp = parse_fw(item.strip())
+                if version_timestamp:
+                    return Firmware(version_timestamp, filename, file_time)
 
         print("WARN: No timestamp found in {}".format(filename))
 
     return Firmware(file_time, filename, file_time)
 
 
-def get_version(headers):
-    data = request.headers.get("X-Esp8266-Version", request.headers.get("HTTP_X_ESP8266_VERSION", None))
+def get_version(request_headers):
+    data = request_headers.get("X-Esp8266-Version", request_headers.get("HTTP_X_ESP8266_VERSION", None))
     if not data:
         print("WARN: No version in request header")
         return None
@@ -131,13 +130,13 @@ config = None
 app = Flask(__name__)
 
 
-def create_ep(name):
-    @app.route("/{}".format(name))
+def create_ep(endpoint_name):
+    @app.route("/{}".format(endpoint_name))
     def endpoint():
         version = get_version(request.headers)
         if version:
             print("INFO: got request with version {}".format(version))
-            firmware = config.get_firmware(name, version)
+            firmware = config.get_firmware(endpoint_name, version)
             if firmware:
                 resp = make_response(
                     send_file(firmware.filename, mimetype="application/octet-stream", as_attachment=True))
@@ -155,8 +154,8 @@ class Watcher(threading.Thread):
         dirs = defaultdict(list)
         for fw in config.firmwares:
             fname = config.firmwares[fw].filename
-            watch = Watch(name=fw, file=os.path.basename(fname), dirname=os.path.dirname(fname))
-            dirs[watch.dirname].append(watch)
+            watch_instance = Watch(name=fw, file=os.path.basename(fname), dirname=os.path.dirname(fname))
+            dirs[watch_instance.dirname].append(watch_instance)
 
         mask = (constants.IN_CLOSE_WRITE | constants.IN_ATTRIB | constants.IN_CREATE | constants.IN_MOVE)
         ino = adapters.Inotify()
@@ -168,10 +167,10 @@ class Watcher(threading.Thread):
         for event in ino.event_gen():
             if event is not None:
                 (header, type_names, watch_path, filename) = event
-                for watch in dirs[watch_path.decode("utf-8")]:
-                    if watch.file == filename.decode("utf-8"):
-                        print("Update {}".format(watch))
-                        config.set_dirty(watch.name)
+                for watch_instance in dirs[watch_path.decode("utf-8")]:
+                    if watch_instance.file == filename.decode("utf-8"):
+                        print("Update {}".format(watch_instance))
+                        config.set_dirty(watch_instance.name)
 
 
 parser = argparse.ArgumentParser(description="Firmware update service")
