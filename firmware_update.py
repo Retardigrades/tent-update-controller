@@ -3,9 +3,10 @@
 import argparse
 import os
 import string
+import hashlib
 from datetime import datetime
 
-from flask import Flask, send_file, request, abort
+from flask import Flask, send_file, request, abort, make_response
 
 
 def strings(filename, min=4):
@@ -22,10 +23,22 @@ def strings(filename, min=4):
             yield result
 
 
+def gen_md5(filename):
+    msg = hashlib.md5()
+    with open(filename, "rb") as fn:
+        msg.update(fn.read())
+
+    return msg.hexdigest()
+
+
 class Firmware(object):
     def __init__(self, version, filename):
         self.version = version
         self.filename = filename
+        self.md5 = gen_md5(filename)
+
+    def __str__(self):
+        return "filename: '{}', date: '{}', md5: '{}'".format(self.filename, self.version, self.md5)
 
 
 class Config(object):
@@ -33,14 +46,14 @@ class Config(object):
         self.firmwares = {}
 
     def add(self, name, firmware):
-        print("INFO: add firmware file {} with date {}".format(firmware.filename, firmware.version))
+        print("INFO: add firmware: {}".format(firmware))
         self.firmwares[name] = firmware
 
     def get_firmware(self, type, date):
         firmware = self.firmwares.get(type)
         if firmware:
             if firmware.version > date:
-                return firmware.filename
+                return firmware
 
         return None
 
@@ -92,9 +105,12 @@ def create_ep(name):
         version = get_version(request.headers)
         if version:
             print("INFO: got request with version {}".format(version))
-            filename = config.get_firmware(name, version)
-            if filename:
-                return send_file(filename)
+            firmware = config.get_firmware(name, version)
+            if firmware:
+                resp = make_response(
+                    send_file(firmware.filename, mimetype="application/octet-stream", as_attachment=True))
+                resp.headers["x-MD5"] = firmware.md5
+                return resp
         abort(403)
 
 
