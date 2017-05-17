@@ -16,9 +16,14 @@ To force the `stat()` behaviour, please use the `--guess-from stat`.
 You can provide two firmwares at the moment: `--led_fw` and `--gyro_fw`.
 They will be made available at `http://.../led_fw` and `http://.../gyro_fw`. 
 
+By default files are watched just by monitoring the change date.
+So you don't have to restart if you have a new version of the firmware.
+If the modification timestamp is newer, the file will automatically reprocessed.
+
 There is a simple inotify watcher that can watch the firmware files on a linux system and update its internal knowledge of them if changed.
 This can be handy in developmen, because you don't have to restart the server on every rebuild.
-Use `--watch` for this.
+Use `--watch inotify` for this.
+To force the chnage-time-behaviour, use `--watch stat`
 
 The Host and port the server binds can be configured using `--host` and `--port`.
 They default to `0.0.0.0` and ´6655`.
@@ -38,7 +43,8 @@ optional arguments:
   --gyro_fw GYRO_FW     Filename for gyro firmware
   --guess_from {stat,strings}
                         Where to get the version from
-  --watch               Watch for file system changes with inotify
+  --watch {inotify,stat}
+                        Watch for file system changes with inotify
   --port PORT           The port to bind the server
   --host HOST           The host address to bind the server
 
