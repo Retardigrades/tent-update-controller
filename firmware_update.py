@@ -70,6 +70,9 @@ class Config(object):
             if firmware:
                 if firmware.version > date:
                     return firmware
+                print("INFO: Our firmware is not newer: {}".format(firmware))
+                return None
+            print("WARN: Ho firmware set for {}".format(name))
 
         return None
 
@@ -104,7 +107,7 @@ def prepare_fw(filename, stat):
 
 
 def get_version(headers):
-    data = request.headers.get("HTTP_X_ESP8266_VERSION", None)
+    data = request.headers.get("X-Esp8266-Version", request.headers.get("HTTP_X_ESP8266_VERSION", None))
     if not data:
         print("WARN: No version in request header")
         return None
@@ -128,7 +131,7 @@ def create_ep(name):
                     send_file(firmware.filename, mimetype="application/octet-stream", as_attachment=True))
                 resp.headers["x-MD5"] = firmware.md5
                 return resp
-        abort(403)
+        return "", 304
 
 
 class Watcher(threading.Thread):
