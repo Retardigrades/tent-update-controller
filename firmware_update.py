@@ -165,6 +165,8 @@ parser.add_argument("--gyro_fw", help="Filename for gyro firmware", required=Fal
 parser.add_argument("--guess_from", help="Where to get the version from", choices=["stat", "strings"],
                     default="strings")
 parser.add_argument("--watch", help="Watch for file system changes with inotify", action="store_true")
+parser.add_argument("--port", help="The port to bind the server", default=6655)
+parser.add_argument("--host", help="The host address to bind the server", default="0.0.0.0")
 
 if __name__ == "__main__":
     config = Config()
@@ -172,6 +174,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     stat = args.guess_from == "stat"
     inotify = args.watch
+    port = int(args.port)
+    host = args.host
 
     args = vars(args)
     for name in ("led_fw", "gyro_fw"):
@@ -186,4 +190,4 @@ if __name__ == "__main__":
     if inotify:
         Watcher().start()
 
-    app.run(host="0.0.0.0", port=6655)
+    app.run(host=host, port=port)
