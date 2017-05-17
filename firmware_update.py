@@ -75,8 +75,9 @@ def prepare_fw(filename, stat):
     if not stat:
         for item in strings(filename, 8):
             if item.startswith("TENT_VERSION::"):
-                timestamp = parse_fw(item)
-                return Firmware(timestamp, filename)
+                timestamp = parse_fw(item.strip())
+                if timestamp:
+                    return Firmware(timestamp, filename)
 
         print("WARN: No timestamp found in {}".format(filename))
 
