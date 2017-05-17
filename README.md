@@ -87,7 +87,7 @@ virtualenv -p python3 <some_path>
 pip install -r requirements.txt
 ```
 
-If you want to use the `--watch` option, you've to run it on linux and install inotify:
+If you want to use the `--watch inotify` option, you've to run it on linux and install inotify:
 ```
 pip install inotify
 ```
