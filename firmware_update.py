@@ -1,9 +1,11 @@
 #!/usr/bin/env/python
 
 import argparse
+import hashlib
 import os
 import string
-import hashlib
+import threading
+from collections import namedtuple, defaultdict
 from datetime import datetime
 
 from flask import Flask, send_file, request, abort, make_response
@@ -34,7 +36,7 @@ def gen_md5(filename):
 class Firmware(object):
     def __init__(self, version, filename):
         self.version = version
-        self.filename = filename
+        self.filename = os.path.abspath(os.path.expanduser(filename))
         self.md5 = gen_md5(filename)
 
     def __str__(self):
@@ -42,18 +44,32 @@ class Firmware(object):
 
 
 class Config(object):
-    def __init__(self):
+    def __init__(self, stat=False):
         self.firmwares = {}
+        self.is_dirty = set()
+        self.stat = stat
+        self.fwlock = threading.RLock()
 
     def add(self, name, firmware):
         print("INFO: add firmware: {}".format(firmware))
         self.firmwares[name] = firmware
 
+    def set_dirty(self, name):
+        with self.fwlock:
+            self.is_dirty.add(name)
+
     def get_firmware(self, type, date):
-        firmware = self.firmwares.get(type)
-        if firmware:
-            if firmware.version > date:
-                return firmware
+        with self.fwlock:
+            firmware = self.firmwares.get(type)
+            if type in self.is_dirty:
+                print("INFO: File {} dirty - recompute .. ".format(name))
+                self.is_dirty.remove(type)
+                firmware = prepare_fw(firmware.filename, self.stat)
+                print("INFO: new fw: {}".format(firmware))
+                self.firmwares[type] = firmware
+            if firmware:
+                if firmware.version > date:
+                    return firmware
 
         return None
 
@@ -115,17 +131,47 @@ def create_ep(name):
         abort(403)
 
 
+class Watcher(threading.Thread):
+    def run(self):
+        from inotify import constants, adapters
+
+        Watch = namedtuple("Watch", ("name", "file", "dirname"))
+
+        dirs = defaultdict(list)
+        for fw in config.firmwares:
+            fname = config.firmwares[fw].filename
+            watch = Watch(name=fw, file=os.path.basename(fname), dirname=os.path.dirname(fname))
+            dirs[watch.dirname].append(watch)
+
+        mask = (constants.IN_CLOSE_WRITE | constants.IN_ATTRIB | constants.IN_CREATE | constants.IN_MOVE)
+        ino = adapters.Inotify()
+        for dirname in dirs:
+            ino.add_watch(dirname.encode("utf-8"), mask=mask)
+
+        print("INFO: Inotify watcher started")
+
+        for event in ino.event_gen():
+            if event is not None:
+                (header, type_names, watch_path, filename) = event
+                for watch in dirs[watch_path.decode("utf-8")]:
+                    if watch.file == filename.decode("utf-8"):
+                        print("Update {}".format(watch))
+                        config.set_dirty(watch.name)
+
+
 parser = argparse.ArgumentParser(description="Firmware update service")
 parser.add_argument("--led_fw", help="Filename of led firmware", required=False)
 parser.add_argument("--gyro_fw", help="Filename for gyro firmware", required=False)
 parser.add_argument("--guess_from", help="Where to get the version from", choices=["stat", "strings"],
                     default="strings")
+parser.add_argument("--watch", help="Watch for file system changes with inotify", action="store_true")
 
 if __name__ == "__main__":
     config = Config()
 
     args = parser.parse_args()
     stat = args.guess_from == "stat"
+    inotify = args.watch
 
     args = vars(args)
     for name in ("led_fw", "gyro_fw"):
@@ -136,5 +182,8 @@ if __name__ == "__main__":
                 create_ep(name)
                 continue
         print("INFO: No {} given".format(name))
+
+    if inotify:
+        Watcher().start()
 
     app.run(host="0.0.0.0", port=6655)
