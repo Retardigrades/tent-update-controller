@@ -8,6 +8,7 @@ The server decides if there should be an update delivered.
 
 For simplicity, the "version" is just the build date.
 This makes it easy because the EXP firmware can just use `__DATE__` and `__TIME__` macros.
+The exact format of the Version is: `TENT_VERSION::Mmm dd yyyy::hh:mm:ss`.
 
 The Server gets the version of the provided file bei either `stat()`-ing the file or by searching for the date string in the binary.
 To force the `stat()` behaviour, please use the `--guess-from stat`.
@@ -42,6 +43,34 @@ optional arguments:
   --host HOST           The host address to bind the server
 
 ```
+
+## Arduino part
+
+The arduino part is described here: http://esp8266.github.io/Arduino/versions/2.0.0/doc/ota_updates/ota_updates.html#http-server
+
+For easy usage, the following code can be put in a header file:
+```C++
+#include <ESP8266httpUpdate.h>
+
+
+#define UPDATE(host, port, endpoint) do { \
+  t_httpUpdate_return ret = ESPhttpUpdate.update(host, port, endpoint,  "TENT_VERSION::" __DATE__ "::" __TIME__); \
+  switch(ret) { \
+    case HTTP_UPDATE_FAILED: \
+    break; \
+    case HTTP_UPDATE_NO_UPDATES: \
+    break; \
+    case HTTP_UPDATE_OK: \
+    break; \
+  }; \
+} while (0)
+```
+
+It can then be used in the setup:
+```C++
+  UPDATE("host", 6655, "/led_fw");
+```
+
 
 ## Installation
 
