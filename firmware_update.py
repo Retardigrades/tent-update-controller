@@ -34,20 +34,26 @@ def gen_md5(filename):
 
 
 class Firmware(object):
-    def __init__(self, version, filename):
+    def __init__(self, version, filename, file_time):
         self.version = version
         self.filename = os.path.abspath(os.path.expanduser(filename))
         self.md5 = gen_md5(filename)
+        self.file_time = file_time
 
     def __str__(self):
         return "filename: '{}', date: '{}', md5: '{}'".format(self.filename, self.version, self.md5)
 
+    @property
+    def changed(self):
+        return datetime.fromtimestamp(os.path.getmtime(self.filename)) != self.file_time
+
 
 class Config(object):
-    def __init__(self, stat=False):
+    def __init__(self, stat=False, check_before_compare=False):
         self.firmwares = {}
         self.is_dirty = set()
         self.stat = stat
+        self.check = check_before_compare
         self.fwlock = threading.RLock()
 
     def add(self, name, firmware):
@@ -67,7 +73,14 @@ class Config(object):
                 firmware = prepare_fw(firmware.filename, self.stat)
                 print("INFO: new fw: {}".format(firmware))
                 self.firmwares[type] = firmware
+
             if firmware:
+                if self.check and firmware.changed:
+                    print("INFO: firmware {} changed ..".format(name))
+                    firmware = prepare_fw(firmware.filename, self.stat)
+                    print("INFO: new fw: {}".format(firmware))
+                    self.firmwares[type] = firmware
+
                 if firmware.version > date:
                     return firmware
                 print("INFO: Our firmware is not newer: {}".format(firmware))
@@ -90,20 +103,19 @@ def prepare_fw(filename, stat):
         print("WARN: File {} does not exist.".format(filename))
         return None
 
+    file_time = datetime.fromtimestamp(os.path.getmtime(filename))
+
     timestamp = None
     if not stat:
         for item in strings(filename, 8):
             if item.startswith("TENT_VERSION::"):
                 timestamp = parse_fw(item.strip())
                 if timestamp:
-                    return Firmware(timestamp, filename)
+                    return Firmware(timestamp, filename, file_time)
 
         print("WARN: No timestamp found in {}".format(filename))
 
-    st = os.path.getmtime(filename)
-    timestamp = datetime.fromtimestamp(st)
-
-    return Firmware(timestamp, filename)
+    return Firmware(file_time, filename, file_time)
 
 
 def get_version(headers):
@@ -167,30 +179,32 @@ parser.add_argument("--led_fw", help="Filename of led firmware", required=False)
 parser.add_argument("--gyro_fw", help="Filename for gyro firmware", required=False)
 parser.add_argument("--guess_from", help="Where to get the version from", choices=["stat", "strings"],
                     default="strings")
-parser.add_argument("--watch", help="Watch for file system changes with inotify", action="store_true")
+parser.add_argument("--watch", help="Watch for file system changes with inotify", choices=["inotify", "stat"],
+                    default="stat")
 parser.add_argument("--port", help="The port to bind the server", default=6655)
 parser.add_argument("--host", help="The host address to bind the server", default="0.0.0.0")
 
 if __name__ == "__main__":
-    config = Config()
 
     args = parser.parse_args()
-    stat = args.guess_from == "stat"
-    inotify = args.watch
+    use_stat = args.guess_from == "stat"
+    watch = args.watch
     port = int(args.port)
     host = args.host
+
+    config = Config(stat=use_stat, check_before_compare=(watch == "stat"))
 
     args = vars(args)
     for name in ("led_fw", "gyro_fw"):
         if name in args and args.get(name):
-            led_fw = prepare_fw(args.get(name), stat)
+            led_fw = prepare_fw(args.get(name), use_stat)
             if led_fw:
                 config.add(name, led_fw)
                 create_ep(name)
                 continue
         print("INFO: No {} given".format(name))
 
-    if inotify:
+    if watch == "inotify":
         Watcher().start()
 
     app.run(host=host, port=port)
