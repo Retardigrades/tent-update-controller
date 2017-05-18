@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import socketserver
+import datetime
 import argparse
 
 
@@ -7,7 +8,8 @@ class SyslogUDPHandler(socketserver.BaseRequestHandler):
     def handle(self):
         data = bytes.decode(self.request[0].strip())
         socket = self.request[1]
-        print("%s : " % self.client_address[0], str(data))
+        print(datetime.datetime.now().strftime("%Y-%d-%m - %H:%M:%S"), "{} : ".format(self.client_address[0]),
+              str(data))
 
 
 parser = argparse.ArgumentParser(description="Simple syslog message receiver")
