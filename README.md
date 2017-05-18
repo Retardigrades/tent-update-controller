@@ -78,6 +78,14 @@ It can then be used in the setup:
 ```
 
 
+## Tools
+
+### Syslog receiver
+
+This is a simple tool to receive and print remote syslog messages without the need for a full syslog server.
+This can be useful if Syslog is used in the ESP for debugging and logging purposes.
+
+
 ## Installation
 
 The simples way to install this is using a virtualenv:
