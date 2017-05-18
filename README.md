@@ -86,6 +86,12 @@ This is a simple tool to receive and print remote syslog messages without the ne
 This can be useful if Syslog is used in the ESP for debugging and logging purposes.
 
 
+### Scroll image
+
+This is a test tool to fire UDP pixel data to an ESP.
+It reads a given Image, uses the first row of pixels and "scrolls" this with a certain framerate to the ESP.
+
+
 ## Installation
 
 The simples way to install this is using a virtualenv:
