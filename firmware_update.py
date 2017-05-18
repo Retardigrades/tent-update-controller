@@ -68,7 +68,7 @@ class Config(object):
         with self.fwlock:
             firmware = self.firmwares.get(firmare_name)
             if firmare_name in self.is_dirty:
-                print("INFO: File {} dirty - recompute .. ".format(name))
+                print("INFO: File {} dirty - recompute .. ".format(firmare_name))
                 self.is_dirty.remove(firmare_name)
                 firmware = prepare_fw(firmware.filename, self.stat)
                 print("INFO: new fw: {}".format(firmware))
@@ -76,7 +76,7 @@ class Config(object):
 
             if firmware:
                 if self.check and firmware.changed:
-                    print("INFO: firmware {} changed ..".format(name))
+                    print("INFO: firmware {} changed ..".format(firmare_name))
                     firmware = prepare_fw(firmware.filename, self.stat)
                     print("INFO: new fw: {}".format(firmware))
                     self.firmwares[firmare_name] = firmware
@@ -85,7 +85,7 @@ class Config(object):
                     return firmware
                 print("INFO: Our firmware is not newer: {}".format(firmware))
                 return None
-            print("WARN: Ho firmware set for {}".format(name))
+            print("WARN: Ho firmware set for {}".format(firmare_name))
 
         return None
 

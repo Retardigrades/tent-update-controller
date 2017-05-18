@@ -32,7 +32,7 @@ if __name__ == "__main__":
 
     if args.reboot:
         print("INFO: reboot controller")
-        sock.sendto(b"\x02", (args.host, 7000))
+        sock.sendto(b"\x01", (args.host, 7001))
         sys.exit(0)
 
     data = prepare_image(args.image)
@@ -49,7 +49,7 @@ if __name__ == "__main__":
 
     while True:
         part = data[:max_led]
-        air_data = b"\x01" + bytes(bytearray(part.flatten()))
+        air_data = bytes(bytearray(part.flatten()))
 
         for chunk in range(chunks):
             sock.sendto(air_data[(chunk * bytes_per_packet):(chunk + 1) * bytes_per_packet], (args.host, 7000))
