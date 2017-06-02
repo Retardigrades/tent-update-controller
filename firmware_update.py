@@ -130,19 +130,18 @@ config = None
 app = Flask(__name__)
 
 
-def create_ep(endpoint_name):
-    @app.route("/{}".format(endpoint_name))
-    def endpoint():
-        version = get_version(request.headers)
-        if version:
-            print("INFO: got request with version {}".format(version))
-            firmware = config.get_firmware(endpoint_name, version)
-            if firmware:
-                resp = make_response(
-                    send_file(firmware.filename, mimetype="application/octet-stream", as_attachment=True))
-                resp.headers["x-MD5"] = firmware.md5
-                return resp
-        return "", 304
+@app.route("/<endpoint_name>")
+def endpoint(endpoint_name):
+    version = get_version(request.headers)
+    if version:
+        print("INFO: got request with version {}".format(version))
+        firmware = config.get_firmware(endpoint_name, version)
+        if firmware:
+            resp = make_response(
+                send_file(firmware.filename, mimetype="application/octet-stream", as_attachment=True))
+            resp.headers["x-MD5"] = firmware.md5
+            return resp
+    return "", 304
 
 
 class Watcher(threading.Thread):
@@ -199,7 +198,6 @@ if __name__ == "__main__":
             led_fw = prepare_fw(args.get(name), use_stat)
             if led_fw:
                 config.add(name, led_fw)
-                create_ep(name)
                 continue
         print("INFO: No {} given".format(name))
 
