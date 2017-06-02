@@ -15,6 +15,7 @@ parser.add_argument("--image", help="Image to load")
 parser.add_argument("--rate", help="Framerate in fps", default=40)
 parser.add_argument("--host", help="Host or ip of the esp")
 parser.add_argument("--reboot", help="Just reboot the controller", action="store_true")
+parser.add_argument("--brightness", help="max brightness of LEDs")
 
 
 def prepare_image(image_file):
@@ -33,6 +34,11 @@ if __name__ == "__main__":
     if args.reboot:
         print("INFO: reboot controller")
         sock.sendto(b"\x01", (args.host, 7001))
+        sys.exit(0)
+
+    if args.brightness:
+        print("INFO: Set brightness to {}".format(args.brightness))
+        sock.sendto(b"\x02" + chr(int(args.brightness)), (args.host, 7001))
         sys.exit(0)
 
     data = prepare_image(args.image)
