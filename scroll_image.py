@@ -38,7 +38,7 @@ if __name__ == "__main__":
 
     if args.brightness:
         print("INFO: Set brightness to {}".format(args.brightness))
-        sock.sendto(b"\x02" + chr(int(args.brightness)), (args.host, 7001))
+        sock.sendto(bytearray([0x2, int(args.brightness)]), (args.host, 7001))
         sys.exit(0)
 
     data = prepare_image(args.image)
