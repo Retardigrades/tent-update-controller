@@ -13,6 +13,7 @@ parser = argparse.ArgumentParser(description="Scroll an image through the leds")
 parser.add_argument("--max", help="max number of LEDs")
 parser.add_argument("--image", help="Image to load")
 parser.add_argument("--rate", help="Framerate in fps", default=40)
+parser.add_argument("--speed", help="Framerate in fps", default=1)
 parser.add_argument("--host", help="Host or ip of the esp")
 parser.add_argument("--reboot", help="Just reboot the controller", action="store_true")
 parser.add_argument("--brightness", help="max brightness of LEDs")
@@ -59,6 +60,6 @@ if __name__ == "__main__":
 
         for chunk in range(chunks):
             sock.sendto(air_data[(chunk * bytes_per_packet):(chunk + 1) * bytes_per_packet], (args.host, 7000))
-        data = np.roll(data, 3)
+        data = np.roll(data, 3 * int(args.speed))
 
         time.sleep(interval)
