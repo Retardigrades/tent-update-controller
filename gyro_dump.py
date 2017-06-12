@@ -1,12 +1,13 @@
 #!/usr/bin/python3
 import socketserver
 import struct
+import argparse
 
 
 data_structs = [
         struct.Struct("L"),
         struct.Struct("HHHHH")]
-data_size = sum(s.size() for s in data_structs)
+data_size = sum(s.size for s in data_structs)
 
 
 class UDPHandler(socketserver.BaseRequestHandler):
@@ -21,9 +22,9 @@ class UDPHandler(socketserver.BaseRequestHandler):
 
             # iter structs
             for st in data_structs:
-                item = data[offset:(off + st.size())]
+                item = data[offset:(off + st.size)]
                 data_items.extend(st.unpack(item))
-                offset += st.size()
+                offset += st.size
 
             print("point:", i, "data:", data_items)
         
@@ -34,6 +35,8 @@ parser.add_argument("--port", help="Port to listen on", default=7000)
 
 
 if __name__ == "__main__":
+    args = parser.parse_args()
+
     try:
         server = socketserver.UDPServer((args.host, int(args.port)), UDPHandler)
         server.serve_forever(poll_interval=0.5)
