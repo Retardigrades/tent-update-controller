@@ -10,6 +10,7 @@ class PygameOutput(object):
         self.width = strips
         self.scale = scale
         self.space = space
+        self.rect = (self.scale, self.scale)
 
         pygame.init()
 
@@ -24,12 +25,15 @@ class PygameOutput(object):
 
     def draw(self, buff):
         for x in range(self.width):
-            for y in range(self.height):
-                off = 3 * self.lookup[x][y]
-                color = pygame.Color(*buff[off:off+3])
-                pos = (x * self.scale + x * self.space, y * self.scale + y * self.space)
+            x_pos = x * self.scale + x * self.space
+            line = self.lookup[x]
 
-                self.surface.fill(color, (pos, (self.scale, self.scale)))
+            for y in range(self.height):
+                off = 3 * line[y]
+                color = pygame.Color(*buff[off:off+3])
+                pos = (x_pos, y * self.scale + y * self.space)
+
+                self.surface.fill(color, (pos, self.rect))
 
         self.display.flip()
 
@@ -82,12 +86,13 @@ class UDPHandler(object):
         while True:
             try:
                 new_data, address = self.socket.recvfrom(self.bufflen - received)
-                if received == 0 and len(new_data) < self.firstbuff:
+                new_len = len(new_data)
+                if received == 0 and new_len < self.firstbuff:
                     print("Drop frame")
                     continue
 
                 data += new_data
-                received += len(new_data)
+                received += new_len
 
                 if received == self.bufflen:
                     self.output_func(data)
