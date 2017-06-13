@@ -33,6 +33,10 @@ class PygameOutput(object):
 
         self.display.flip()
 
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                sys.exit()
+
 
 def lookup_table(strips, strip_len, bundle_size):
 
