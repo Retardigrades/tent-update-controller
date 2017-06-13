@@ -1,5 +1,7 @@
 import pygame
 import socket
+import argparse
+import sys
 
 
 class PygameOutput(object):
@@ -96,16 +98,27 @@ class UDPHandler(object):
                 print("Crtl+C Pressed. Shutting down.")
                 return
 
+parser = argparse.ArgumentParser(description="Simple color packet receiver")
+parser.add_argument("--host", help="Hostname to listen on", default="0.0.0.0")
+parser.add_argument("--port", help="Port to listen on", default=7000, type=int)
+parser.add_argument("--strips", help="Number of strips", type=int, default=25)
+parser.add_argument("--striplen", help="Leds per strip", type=int, default=20)
+parser.add_argument("--bundle", help="Strip bundle size", type=int, default=5)
+parser.add_argument("--scale", help="Scale the pixels", type=int, default=8)
+parser.add_argument("--space", help="Space between leds", type=int, default=5)
+parser.add_argument("--firstpacket", help="Size of the first (sync) packet", type=int, default=800)
 
 if __name__ == "__main__":
-    strips = 25
-    strip_len = 20
-    bundle = 5
-    scale = 10
-    space = 4
-    port = 7000
-    host = "0.0.0.0"
-    firstbuff = 800
+    args = parser.parse_args()
+
+    strips = args.strips
+    strip_len = args.striplen
+    bundle = args.bundle
+    scale = args.scale
+    space = args.space
+    port = args.port
+    host = args.host
+    firstbuff = args.firstpacket
 
     bufflen = strips * strip_len * 3
 
