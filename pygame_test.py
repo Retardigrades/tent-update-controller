@@ -5,7 +5,7 @@ import sys
 
 
 class PygameOutput(object):
-    def __init__(self, strips, strip_len, bundle_size, scale = 1, space = 0):
+    def __init__(self, strips, strip_len, bundle_size, scale=1, space=0):
         self.height = strip_len
         self.width = strips
         self.scale = scale
@@ -14,7 +14,8 @@ class PygameOutput(object):
 
         pygame.init()
 
-        screen = pygame.display.set_mode((self.width * scale + self.width * space, self.height * scale + self.height * space))
+        screen = pygame.display.set_mode(
+            (self.width * scale + self.width * space, self.height * scale + self.height * space))
         pygame.display.set_caption('Test output')
         pygame.mouse.set_visible(0)
 
@@ -30,7 +31,7 @@ class PygameOutput(object):
 
             for y in range(self.height):
                 off = 3 * line[y]
-                color = pygame.Color(*buff[off:off+3])
+                color = pygame.Color(*buff[off:off + 3])
                 pos = (x_pos, y * self.scale + y * self.space)
 
                 self.surface.fill(color, (pos, self.rect))
@@ -43,7 +44,6 @@ class PygameOutput(object):
 
 
 def lookup_table(strips, strip_len, bundle_size):
-
     led_cnt = strips * strip_len
     positions = []
 
@@ -57,7 +57,7 @@ def lookup_table(strips, strip_len, bundle_size):
                 pos = (strip * strip_len) + led
             else:
                 pos = (strip * strip_len) + (strip_len - (led + 1))
-            
+
             positions[-1].append(pos)
         print(positions[-1])
 
@@ -105,6 +105,7 @@ class UDPHandler(object):
                 print("Crtl+C Pressed. Shutting down.")
                 return
 
+
 parser = argparse.ArgumentParser(description="Simple color packet receiver")
 parser.add_argument("--host", help="Hostname to listen on", default="0.0.0.0")
 parser.add_argument("--port", help="Port to listen on", default=7000, type=int)
@@ -130,8 +131,7 @@ if __name__ == "__main__":
     bufflen = strips * strip_len * 3
 
     output = PygameOutput(strips, strip_len, bundle, scale, space)
-    
+
     handler = UDPHandler(host, port, bufflen, firstbuff, output.draw)
 
     handler.handle()
-
