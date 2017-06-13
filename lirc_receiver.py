@@ -7,7 +7,7 @@ import argparse
 
 class Receiver(object):
     def __init__(self, proc_name, base_url, url_map):
-        self.sockid = lirc.init(proc_name, blocking=False)
+        self.sockid = lirc.init(proc_name, blocking=True)
         self.base_url = base_url
         self.url_map = url_map
 
