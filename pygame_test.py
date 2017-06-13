@@ -23,8 +23,6 @@ class PygameOutput(object):
         self.lookup = lookup_table(strips, strip_len, bundle_size)
 
     def draw(self, buff):
-        assert len(buff) == 3 * self.height * self.width
-
         for x in range(self.width):
             for y in range(self.height):
                 off = 3 * self.lookup[x][y]
