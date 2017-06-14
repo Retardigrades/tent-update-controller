@@ -13,6 +13,7 @@ class PygameOutput(object):
         self.scale = scale
         self.space = space
         self.rect = (self.scale, self.scale)
+        self._draw = self.draw_rect
 
         pygame.init()
 
@@ -26,7 +27,7 @@ class PygameOutput(object):
 
         self.lookup = lookup_table(strips, strip_len, bundle_size)
 
-    def draw(self, buff):
+    def draw_rect(self, buff):
         for x in range(self.width):
             x_pos = x * self.scale + x * self.space
             line = self.lookup[x]
@@ -43,6 +44,39 @@ class PygameOutput(object):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 sys.exit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == 32: # space
+                    self.surface.fill((0, 0, 0))
+                    self._draw = self.draw_circles
+                if event.key == 27:
+                    sys.exit()
+
+    def draw_circles(self, buff):
+        for x in range(self.width):
+            x_pos = int(x * self.scale + x * self.space + self.scale / 2)
+            line = self.lookup[x]
+
+            for y in range(self.height):
+                off = 3 * line[y]
+                color = pygame.Color(*buff[off:off + 3])
+                pos = (x_pos, int(y * self.scale + y * self.space + self.scale / 2))
+
+                pygame.draw.circle(self.surface, color, pos, int(scale/2))
+
+        self.display.flip()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                sys.exit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == 32: # space
+                    self.surface.fill((0, 0, 0))
+                    self._draw = self.draw_rect
+                if event.key == 27:
+                    sys.exit()
+
+    def draw(self, buff):
+        self._draw(buff)
 
 
 def lookup_table(strips, strip_len, bundle_size):
