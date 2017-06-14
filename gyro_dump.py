@@ -5,8 +5,8 @@ import argparse
 
 
 data_structs = [
-        struct.Struct("L"),
-        struct.Struct("HHHHH")]
+        struct.Struct("=L"),
+        struct.Struct("=HHHHH")]
 data_size = sum(s.size for s in data_structs)
 
 
