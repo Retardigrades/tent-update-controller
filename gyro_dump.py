@@ -22,7 +22,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
 
             # iter structs
             for st in data_structs:
-                item = data[offset:(off + st.size)]
+                item = data[offset:(offset + st.size)]
                 data_items.extend(st.unpack(item))
                 offset += st.size
 
