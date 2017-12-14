@@ -17,7 +17,7 @@ class SyslogUDPHandler(socketserver.BaseRequestHandler):
 
 parser = argparse.ArgumentParser(description="Simple syslog message receiver")
 parser.add_argument("--host", help="Hostname to listen on", default="0.0.0.0")
-parser.add_argument("--port", help="Port to listen on", default=6656)
+parser.add_argument("--port", help="Port to listen on", default=6656, type=int)
 parser.add_argument("--file", help="also log to file")
 
 if __name__ == "__main__":
